@@ -47,7 +47,7 @@ class TextDataset(object):
         self.data = vectorizer.fit_transform(self.documents)
         self.vocab = vectorizer.get_feature_names()
         assert len(self.vocab) == self.data.shape[1]
-    
+
     def data_info(self, show_classes=False):
         N, M = self.data.shape
         sparsity = self.data.nnz / N / M * 100
@@ -56,7 +56,7 @@ class TextDataset(object):
             for i in range(len(self.class_names)):
                 num = sum(self.labels == i)
                 print('  {:5d} documents in class {:2d} ({})'.format(num, i, self.class_names[i]))
-        
+
     def show_document(self, i):
         label = self.labels[i]
         name = self.class_names[label]

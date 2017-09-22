@@ -117,7 +117,6 @@ def metis(W, levels, rid=None):
 
 # Coarsen a graph given by rr,cc,vv.  rr is assumed to be ordered
 def metis_one_level(rr,cc,vv,rid,weights):
-
     nnz = rr.shape[0]
     N = rr[nnz-1] + 1
 
