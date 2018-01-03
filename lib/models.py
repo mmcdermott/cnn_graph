@@ -111,6 +111,31 @@ class base_model(object):
 
         return class_probabilities
 
+    def class_probabilities_component(self, components_data, sess=None):
+        size = components_data[0].shape[0]
+        class_probabilities = np.empty(size)
+        sess = self._get_session(sess)
+        for begin in range(0, size, self.batch_size):
+            end = begin + self.batch_size
+            if end > size: continue
+
+            end = min([end, size])
+
+            idx = range(begin, end)
+            #batch_labels = labels[idx]
+            component_batches = [data[idx,:] for data in components_data]
+
+            feed_dict = {self.ph_dropout: 1}
+            for ph_data, cb in zip(self.ph_datas, component_batches[:-1]):
+                feed_dict[ph_data] = cb if type(cb) is np.ndarray else cb.toarray()
+            feed_dict[self.ph_disconnected_nodes] = component_batches[-1]
+
+            batch_probs = sess.run(self.op_probabilities, feed_dict)
+
+            class_probabilities[begin:end] = batch_probs[:end-begin][:, 1]
+
+        return class_probabilities
+
     def evaluate_component(self, components_data, labels, sess=None):
         """
         Runs one evaluation against the full epoch of data.
