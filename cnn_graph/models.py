@@ -152,7 +152,6 @@ class base_model(object):
         """
         t_process, t_wall = time.process_time(), time.time()
         predictions, loss = self.predict_components(components_data, labels, sess)
-        #print(predictions)
         ncorrects = sum(predictions == labels)
         accuracy = 100 * sklearn.metrics.accuracy_score(labels, predictions)
         f1 = 100 * sklearn.metrics.f1_score(labels, predictions, average='weighted')
@@ -178,7 +177,6 @@ class base_model(object):
         """
         t_process, t_wall = time.process_time(), time.time()
         predictions, loss = self.predict(data, labels, sess)
-        #print(predictions)
         ncorrects = sum(predictions == labels)
         accuracy = 100 * sklearn.metrics.accuracy_score(labels, predictions)
         f1 = 100 * sklearn.metrics.f1_score(labels, predictions, average='weighted')
@@ -224,13 +222,18 @@ class base_model(object):
             # Periodical evaluation of the model.
             if step % self.eval_frequency == 0 or step == num_steps:
                 epoch = step * self.batch_size / num_samples
-                print('step {} / {} (epoch {:.2f} / {}):'.format(step, num_steps, epoch, self.num_epochs))
-                print('  learning_rate = {:.2e}, loss_average = {:.2e}'.format(learning_rate, loss_average))
                 string, accuracy, f1, loss = self.evaluate_component(val_datas, val_labels, sess)
                 accuracies.append(accuracy)
                 losses.append(loss)
-                print('  validation {}'.format(string))
-                print('  time: {:.0f}s (wall {:.0f}s)'.format(time.process_time()-t_process, time.time()-t_wall))
+                print(
+                    "step {} / {} (epoch {:.2f} / {}):\n"
+                    "  learning_rate = {:.2e}, loss_average = {:.2e}\n"
+                    "  validation {}\n"
+                    "  time: {:.0f}s (wall {:.0f}s)".format(
+                        step, num_steps, epoch, self.num_epochs, learning_rate, loss_average, string,
+                        time.process_time()-t_process, time.time()-t_wall
+                    )
+                )
 
                 # Summaries for TensorBoard.
                 summary = tf.Summary()
@@ -384,13 +387,13 @@ class base_model(object):
                     self.graph_components_out.append(op_final_graph_out)
 
             # Model.
-            op_logits = self.fully_connected_layers(self.graph_components_out, self.ph_dropout)
-            self.op_loss, self.op_loss_average = self.loss(op_logits, self.ph_labels,
+            self.op_logits = self.fully_connected_layers(self.graph_components_out, self.ph_dropout)
+            self.op_loss, self.op_loss_average = self.loss(self.op_logits, self.ph_labels,
                     self.regularization)
             self.op_train = self.training(self.op_loss, self.learning_rate,
                     self.decay_steps, self.decay_rate, self.momentum)
-            self.op_probabilities = self.probabilities(op_logits)
-            self.op_prediction = self.prediction(op_logits)
+            self.op_probabilities = self.probabilities(self.op_logits)
+            self.op_prediction = self.prediction(self.op_logits)
 
             # Initialize variables, i.e. weights and biases.
             self.op_init = tf.global_variables_initializer()
@@ -1189,14 +1192,13 @@ class cgcnn_components(base_model):
         # Fully connected hidden layers.
         reshaped = [tf.reshape(x, [self.batch_size, -1]) for x in xs]
         x = tf.concat(reshaped, axis=1)
-        for i,M in enumerate(self.M[:-1]):
+        for i, M in enumerate(self.M[:-1]):
             with tf.variable_scope('fc{}'.format(i+1)):
                 x = self.fc(x, M)
                 x = tf.nn.dropout(x, dropout)
 
         # Logits linear layer, i.e. softmax without normalization.
-        with tf.variable_scope('logits'):
-            x = self.fc(x, self.M[-1], relu=False)
+        with tf.variable_scope('logits'): x = self.fc(x, self.M[-1], relu=False)
         return x
 
 class cgcnn(base_model):
