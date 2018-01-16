@@ -1181,7 +1181,7 @@ class cgcnn_components(base_model):
         # Graph convolutional layers.
         x = tf.expand_dims(x, 2)  # N x M x F=1
         for i, p in enumerate(self.ps[component]):
-            with tf.variable_scope('conv{}'.format(i+1), reuse=component > 0):
+            with tf.variable_scope('conv{}'.format(i+1), reuse = (component > 0) ):
                 with tf.name_scope('filter'):
                     x = self.filter(x, self.Ls[component][i], self.Fs[component][i], self.Ks[component][i])
                 with tf.name_scope('bias_relu'): x = self.brelu(x)
